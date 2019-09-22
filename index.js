@@ -1,41 +1,14 @@
-import { getHTML, getCarDeals, getPageCount } from './lib/scraper';
+import express from 'express';
+import db from './lib/db';
+import { getAllPrices } from './lib/scraper';
+import './lib/cron';
 
-const BASE_URL = `https://auto.jofogas.hu/magyarorszag/auto`;
-const car = {
-  brand: 'skoda',
-  model: 'superb',
-};
+const app = express();
+const port = 8996;
 
-let prices = [];
+app.get('/scrape', async (req, res, ext) => {
+  const prices = await getAllPrices();
+  res.json({ prices });
+});
 
-function flattenPrices() {
-  return (prices = [].concat.apply([], prices));
-}
-
-async function getAllPrices() {
-  // Get initial html and pageCount
-  const html = await getHTML(`${BASE_URL}/${car.brand}/${car.model}`);
-  const pageCount = await getPageCount(html);
-
-  // Get all prices for each page
-  for (let currentPage = 1; currentPage <= pageCount; currentPage++) {
-    const params = {
-      o: currentPage,
-    };
-    const currentPageHtml = await getHTML(
-      `${BASE_URL}/${car.brand}/${car.model}`,
-      params,
-    );
-    const currentPagePrices = await getCarDeals(currentPageHtml);
-
-    prices.push(currentPagePrices);
-  }
-
-  flattenPrices();
-}
-
-async function go() {
-  await getAllPrices();
-}
-
-go();
+app.listen(port, () => console.log(`Example App running on port ${port}`));
